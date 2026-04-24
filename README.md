@@ -26,6 +26,7 @@ RocketStore.slnx
 - **Manual mapping via extension methods** (`product.ToDto()`, `request.ToEntity()`), not AutoMapper/Mapster. For four aggregates the cost of a real mapping library outweighs the benefit; extension methods are explicit, discoverable and have zero runtime surprises.
 - **DTOs as C# records.** Immutable by construction; request DTOs cannot be tampered with after model binding.
 - **CancellationToken plumbed through** from controllers to repositories.
+- **Explicit EF Core model configuration** via `IEntityTypeConfiguration<T>` per entity (in `Infrastructure/Data/Configurations/`), applied through `ApplyConfigurationsFromAssembly`. Keeps Domain entities as pure POCOs (no EF attributes), makes schema rules explicit (decimal precision, required fields, indices, cascade behavior), and mirrors business rules at the schema level — e.g. `Customer → Orders` uses `DeleteBehavior.Restrict`, the same rule enforced by the 409 in `CustomerService`.
 
 ---
 
@@ -34,7 +35,7 @@ RocketStore.slnx
 ### Mandatory (all tasks)
 
 - **Products CRUD** (`ProductsController`) — all five endpoints, validation of `Name` and `Price > 0`.
-- **Customers CRUD** (`CustomersController`) — all five endpoints, email format validation, `GET /{id}` includes the customer's orders, `DELETE` returns **409 Conflict** when the customer has existing orders.
+- **Customers CRUD** (`CustomersController`) — all five endpoints, email format validation, `GET /{id}` includes the customer's orders, `DELETE` returns **409 Conflict** when the customer has existing orders, and `POST` / `PUT` return **409 Conflict** when the email is already used by another customer (case-insensitive).
 - **Orders** (`OrdersController`) — list, get-by-id and place:
   - Rejects unknown `CustomerId` → **404**.
   - Rejects unknown `ProductId` → **404**.
@@ -51,7 +52,7 @@ RocketStore.slnx
 |---|---|---|
 | 1 | Pagination (`page`, `pageSize` on list endpoints) | Done — on products, customers and orders |
 | 2 | Search / filter (`name` on products, `email` on customers) | Done — partial match, case-insensitive |
-| 3 | Unit tests | Done — 17 tests, focused on `OrderService` (all business rules) |
+| 3 | Unit tests | Done — 21 tests, focused on `OrderService` (all business rules) plus coverage for product/customer services |
 | 4 | DTOs & mapping | Done — requests/responses are separate record types |
 | 5 | Global error handling | Done — RFC 7807 `problem+json` responses |
 | 6 | Structured logging | Done — `ILogger<T>` in services, structured placeholders for IDs/quantities |
@@ -143,6 +144,6 @@ Validation errors include a per-field `errors` dictionary:
 | 204 No Content | Successful `DELETE` |
 | 400 Bad Request | Validation failure |
 | 404 Not Found | Entity does not exist |
-| 409 Conflict | Customer delete blocked by existing orders |
+| 409 Conflict | Customer delete blocked by existing orders, or duplicate email on create/update |
 | 422 Unprocessable Entity | Insufficient stock on order placement |
 | 500 Internal Server Error | Unhandled error (generic payload, details logged) |

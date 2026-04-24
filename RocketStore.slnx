@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="WebApi/WebApi.csproj" />
+  <Project Path="WebApi.Application/WebApi.Application.csproj" />
+  <Project Path="WebApi.Domain/WebApi.Domain.csproj" />
+  <Project Path="WebApi.Infrastructure/WebApi.Infrastructure.csproj" />
+  <Project Path="WebApi.Tests/WebApi.Tests.csproj" />
+</Solution>
